@@ -5520,7 +5520,10 @@ const SOBRE_ISLA = {};
 function terrenoPixeles(n) {
   const t = IMG['aldea-terreno-nivel' + n]; if (!t || !t.complete || !t.naturalWidth) return null;
   const c = document.createElement('canvas'); c.width = t.naturalWidth; c.height = t.naturalHeight; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(t, 0, 0);
-  return { w: c.width, h: c.height, d: x.getImageData(0, 0, c.width, c.height).data };
+  const d = x.getImageData(0, 0, c.width, c.height).data;
+  // Safari puede dar la imagen "completa" pero todavía sin pintar (todo transparente): entonces aún no se sabe dónde está la isla
+  let llenos = 0; for (let i = 3; i < d.length && llenos < 2000; i += 4 * 37) if (d[i] > 128) llenos++;
+  return llenos < 200 ? null : { w: c.width, h: c.height, d };
 }
 function esArriba(T, x, y) {   // ¿ese punto del terreno es la cara de arriba (pasto o camino)?
   x = Math.round(x); y = Math.round(y); if (x < 0 || y < 0 || x >= T.w || y >= T.h) return false;
@@ -5539,6 +5542,8 @@ function objetosSobreIsla(n) {
     ALDEA[n].corridos.push([o.x, o.y, o.w, o.h, mejor ? mejor.join(',') : 'quitado']);
     if (mejor) r.push(Object.assign({}, o, { x: o.x + mejor[0], y: o.y + mejor[1], prof: o.prof + mejor[1] / 8 }));
   }
+  // si se quitaría más de la cuarta parte, el terreno no se leyó bien: se dibuja todo como se diseñó y se vuelve a revisar después (nunca se guarda una isla sin edificios)
+  if (r.length < L.length * .75) return L;
   return SOBRE_ISLA[n] = r;
 }
 function capaObjetos(n, alfa) {   // los objetos del nivel n, como elementos de la lista
