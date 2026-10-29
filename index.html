@@ -7661,4 +7661,56 @@ const fraseBaseC3 = fraseBase;
 fraseBase = function (n) { return ({ oli: elegir(['Hoy descansé. ¡Mira, descansé!', 'Tomé agua. Dos vasos. Liz me obligó.']) })[n.id] || fraseBaseC3(n); };
 
 </script>
+<script>
+// arreglos para la versión publicada (28-oct-2026, noche): la portada sin frenar el arranque y con los edificios en su lugar, textos claros y el Autoclave
+function pintarAldeaHora() {
+  const pt = $('portada'), gi = $('girar'), verP = !pt.hidden, verG = gi && getComputedStyle(gi).display !== 'none';
+  if (!verP && !verG) return;
+  const s0 = SAVE, b0 = { cx: BASE.cx, cy: BASE.cy, z: BASE.z }; let n = 1;
+  ctx.save();
+  try {
+    let ex = null; try { ex = cargar(); } catch (e) {}
+    // sin partida guardada (empezar de cero) se usa una partida nueva de mentira: las luces de la noche preguntan el nivel de la isla
+    if (!SAVE) SAVE = ex || nuevaPartida('normal'); try { n = nivelIsla(); } catch (e) { n = 1; }
+    const w = cv.width, h = cv.height, caja = BASE_CAJA[n] || BASE_CAJA[1], cw = caja[2] - caja[0], ch = caja[3] - caja[1];
+    BASE.cx = (caja[0] + caja[2]) / 2; BASE.cy = (caja[1] + caja[3]) / 2 + ch * .04;
+    BASE.z = Math.min(w / (cw * S * ZOOM.z), h / (ch * S * ZOOM.z)) * .9;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); dibCieloAldea(w, h);
+    const k = BASE.z * ZOOM.z * S, x0 = w / 2 - BASE.cx * k, y0 = h / 2 - BASE.cy * k;
+    ctx.imageSmoothingEnabled = false; const ter = IMG['aldea-terreno-nivel' + n]; if (ter && ter.naturalWidth) ctx.drawImage(ter, x0, y0, ter.naturalWidth * k, ter.naturalHeight * k);
+    // los objetos son recortes de una hoja (aldea-objetos-nivelN): cada uno en su lugar, como en dibujarIsla (p22_aldea_capas.js)
+    const hoja = IMG['aldea-objetos-nivel' + n]; if (hoja && hoja.naturalWidth) for (const o of objetosSobreIsla(n).slice().sort((a, b) => a.prof - b.prof))
+      ctx.drawImage(hoja, o.hx, o.hy, o.w, o.h, x0 + o.x * k, y0 + o.y * k, o.w * k, o.h * k);
+    tinteHoraAldea(w, h);
+    for (const [padre, id] of [[pt, 'fondoHoraP'], [gi && gi.querySelector('.fondo'), 'fondoHoraG']]) {
+      if (!padre) continue; const c = lienzoFondo(padre, id); if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+      c.getContext('2d').drawImage(cv, 0, 0); }
+    pt.style.background = '#0f1433'; FONDO_HORA.momento = momentoAldea(); FONDO_HORA.nivel = n;
+  } finally { SAVE = s0; Object.assign(BASE, b0); ctx.restore(); }
+}
+
+escalarPortada = function () { escalarPortada25(); try { pintarAldeaHora(); } catch (e) { anotarError(e, 'fondo de la portada'); } };
+// ---------- 11. Lo que vio Caleth al probar (28-oct-2026, noche) ----------
+// a) Textos que quedaron café sobre los paneles oscuros: la ficha del bestiario, la de personaje nuevo, la gabacha, la tienda, la frase de la
+//    estatua y la tarjeta de la portada para elegir partida. Pasan a los colores claros del tema oscuro (ANIMACIONES.md, sección 6).
+(() => { const s = document.createElement('style'); s.textContent =
+  '.esc [style*="color:#3b2a1c"]{color:#f1ecff!important}.esc .porque{color:#ff7a6a!important}.esc [style*="color:#2a6f8a"]{color:#8fd3ff!important}' +
+  '.esc [style*="color:#c0392b"]{color:#ff7a6a!important}' +
+  '#leyTxt{color:#f1ecff!important}#leyCarta small,#leyCarta .sigue{color:#c9bfe6!important}' +
+  '#portOpc h4,#portOpc .dif small{color:#f1ecff!important}#portOpc .cont{background:#2b2738!important;border-color:#57507a!important;color:#f1ecff!important}' +
+  '#portOpc .cont small{color:#c9bfe6!important;opacity:1!important}' +
+  // b) el Autoclave listo se ve más grande que su círculo de 56 px: el toque cuenta también en el brillo (8 px alrededor)
+  '#bUlt.lista::before{content:"";position:absolute;inset:-8px;border-radius:50%}';
+  document.head.appendChild(s); })();
+// c) si se toca el Autoclave listo justo mientras Liz esquiva, recibe un golpe o lanza algo, el toque ya no se pierde: espera 0,5 s y sale
+const autoclave25 = autoclave;
+autoclave = function () {
+  if (P && P.ult >= 100 && !P.muerta && !dialogo && !pausa && !escena && !(M && M.calma) && !puedeActuar()) { P.colaUlt = .5; return; }
+  P && (P.colaUlt = 0); return autoclave25();
+};
+const actualizar25c = actualizar;
+actualizar = function (dt) { actualizar25c(dt);
+  if (P && P.colaUlt > 0) { P.colaUlt -= dt; if (puedeActuar()) { P.colaUlt = 0; autoclave25(); } } };
+coloniasTotal = function () { return SAVE && SAVE.colonias ? SAVE.colonias.length : 0; };
+</script>
 </body></html>
