@@ -5269,7 +5269,7 @@ function evolucion2() {
   pantallaGabacha({ de: 2, a: 3, nombre: '★★★ Liz del Mechero', que: 'La gabacha con bordados de llama.', efecto: 'El Mechero hace un 20 % más de daño y se recarga antes.', ufc: 1000, salvo: 'Río Carmesí a salvo' }, () => {
     Audio.musica(M.musica);
     hablar([['Liz', 'El río vuelve a correr limpio. Caleth, esto va por todas tus prácticas de Hematología.', 'feliz', 'corazon'],
-      ['Capítulo 3: Ciudadela ABO', 'Próximamente. Puedes seguir explorando y buscar las colonias doradas que falten.']], () => terminarEtapa('2-8', () => {}));
+      ['Fin del capítulo 2', 'Gracias por jugar. El capítulo 3, la Ciudadela ABO, ya te espera en el mapa del reino. Puedes seguir explorando y buscar las colonias doradas que falten.']], () => terminarEtapa('2-8', () => {}));
   });
 }
 
@@ -8314,7 +8314,7 @@ function evolucion3() {
   pantallaGabacha({ de: 3, a: 4, nombre: '★★★★ Liz Banco de Sangre', que: 'El borde y las mangas en lila, un broche de gota roja y un pasador dorado con el triángulo y el círculo.',
     efecto: 'El color de grupo dura 60 s en vez de 40 y los caldos curan un 10 % más.', ufc: 1200, salvo: 'Ciudadela ABO a salvo' }, () => {
     Audio.musica(M.musica);
-    hablar([['Capítulo 4: Torre del Método', 'Próximamente. Puedes seguir explorando y buscar las colonias doradas que falten.']], () => terminarEtapa('3-8', () => {}));
+    hablar([['Fin del capítulo 3', 'Gracias por jugar. El capítulo 4, la Torre del Método, ya te espera en el mapa del reino. Puedes seguir explorando y buscar las colonias doradas que falten.']], () => terminarEtapa('3-8', () => {}));
   });
 }
 
@@ -9426,7 +9426,7 @@ function evolucion4() {
   pantallaGabacha({ de: 4, a: 5, nombre: '★★★★★ Liz Autoclave', que: 'La capa azul, con el broche y la diadema dorados.',
     efecto: 'El Autoclave se carga un 25 % más rápido, y su golpe también le pega a los enemigos escondidos.', ufc: 1400, salvo: 'Torre del Método a salvo' }, () => {
     Audio.musica(M.musica);
-    hablar([['Capítulo 5: El Brote', 'Próximamente. Puedes seguir explorando y buscar las colonias doradas que falten.']], () => terminarEtapa('4-8', () => {}));
+    hablar([['Fin del capítulo 4', 'Gracias por jugar. El capítulo 5, El Brote, ya te espera en el mapa del reino. Puedes seguir explorando y buscar las colonias doradas que falten.']], () => terminarEtapa('4-8', () => {}));
   });
 }
 // Kai se va escaleras abajo
@@ -9862,6 +9862,9 @@ function actualizarFlores(dt) {
       if (!M.dijoFlor && M.id === '5-1') { M.dijoFlor = true; } }
     else if (f.estado === 'reventada' && (f.t -= dt) <= 0) { f.estado = 'sana'; chispas(f.x, f.y - 10, '#ffd9f0', 6, 40); }   // vuelve a brotar: nunca se traba
   }
+  // 5-4: la sala de la espuma (sin Envueltos ni Desnudos) abre el paso, igual que la de las flores en 5-1
+  if (M.id === '5-4' && !SAVE.abiertos.includes('5-4:puerta:espuma') && salaActual && salaActual.id === 'c' && !enemigos.some(e => e.hp > 0 && e.sala === 'c' && (e.tipo === 'envuelto' || e.tipo === 'desnudo'))) {
+    abrirPuertas('espuma'); aviso('Sin envolturas a la vista: se abrió el paso', 'icono-aventura'); }
   const ce = M.id === '5-1' && !SAVE.abiertos.includes('5-1:puerta:flores');   // la sala de las flores: sin partículas y con al menos una flor sana, se abre el paso
   if (ce) { const sc = M.salas.find(s => s.id === 'c'); if (salaActual === sc && !enemigos.some(e => e.hp > 0 && e.tipo === 'particula' && e.sala === 'c') && M.flores.some(f => f.sala === 'c' && f.estado === 'sana')) {
     abrirPuertas('flores'); aviso('Las flores están a salvo: se abrió el paso', 'icono-aventura'); } }
@@ -10679,6 +10682,51 @@ const dibNpcBaseC5b = dibNpcBase;
 dibNpcBase = function (n) { if (n.id === 'neo' && BASE.neoDurmio > 0) { dibSpr('neo-dormida', n.x, n.y, false, false, null, 1); return; } return dibNpcBaseC5b(n); };
 const actualizarBaseC5 = actualizarBase;
 actualizarBase = function (dt) { actualizarBaseC5(dt); if (BASE.neoDurmio > 0 && !dialogo) BASE.neoDurmio -= dt; };
+
+// ================= los tiempos reales por capítulo (PROGRAMAR-3-4-5.md, parte 6) =================
+// En Pausa → Estadísticas, debajo de la lista de etapas: cuánto tardó la primera vez en cada capítulo (la suma de sus etapas, también la
+// secreta), sacado de SAVE.tiempos. Si un capítulo está a medias, lleva "…". Así Catalina y Caleth pueden leer sus tiempos de verdad.
+function tiemposPorCapitulo() {
+  const T = SAVE.tiempos || {};
+  return CAPITULOS.map(c => { const ids = (c.etapas || []).concat(Object.keys(SECRETA_DESDE).filter(s => s[0] === String(c.n)));
+    let s = 0, alguna = false;
+    for (const id of ids) { const r = T[id]; if (!r) continue; alguna = true; s += r.primera != null ? r.primera : r.total; }
+    return { n: c.n, nombre: c.nombre, seg: s, completo: (c.etapas || []).every(etapaHecha), alguna }; });
+}
+const pantallaPausaC6 = pantallaPausa;
+pantallaPausa = function () {
+  const r = pantallaPausaC6.apply(this, arguments);
+  // arriba de la lista de etapas (con su mismo estilo), una fila por capítulo; sin repetirlas si la pantalla se vuelve a abrir
+  const caps = tiemposPorCapitulo().filter(c => c.alguna), tabla = $('pant') && $('pant').querySelector('.tabla');
+  if (caps.length && tabla && PANT && PANT.id === 'pausa' && !tabla.querySelector('.tiemposCap')) {
+    const filas = caps.map(c => '<div class="tiemposCap" style="position:relative;height:32px;margin-bottom:6px;border-radius:4px;background:#ead8b0">' +
+      pTxt('oscuro', 12, 7, 14, 'Capítulo ' + c.n, 'font-weight:700') + pTxt('oscuro', 112, 7, 13, c.nombre) +
+      pTxt('oscuro d', 498, 7, 14, minSeg(c.seg) + (c.completo ? '' : ' …'), 'font-weight:700') + '</div>').join('');
+    tabla.insertAdjacentHTML('afterbegin', filas);
+  }
+  // el cuadro va con el tema oscuro, pero las filas tenían el color del pergamino viejo: letra clara sobre fondo claro, casi no se leía
+  if (tabla && PANT && PANT.id === 'pausa') [...tabla.children].forEach((f, i) => { f.style.background = f.classList.contains('tiemposCap') ? 'rgba(142,107,255,.24)' : i % 2 ? 'rgba(255,255,255,.10)' : 'rgba(255,255,255,.05)';
+    for (const e of f.querySelectorAll('.oscuro')) if (e.style.color === 'rgb(192, 57, 43)') e.style.setProperty('color', '#ffa294', 'important'); });   // el rojo de "etapa corta", más claro sobre lo oscuro (con important: p25 ya lo pinta #ff7a6a con important)
+  return r;
+};
+
+// ================= qué etapas están abiertas en el mapa del reino (encontrado en la parte 6, la prueba de todo el juego) =================
+// etapaAbierta (p10) solo conocía los capítulos 1 y 2: en el mapa, TODAS las etapas de los capítulos 3, 4 y 5 salían con candado y "Jugar"
+// apagado, aunque el capítulo estuviera abierto. Ahora, para cualquier capítulo: la primera se abre con el capítulo, las demás al terminar la
+// de antes (la misma regla de siempre: "Termina X para abrirla"). Los capítulos 1 y 2 y las secretas siguen igual.
+const etapaAbiertaC6 = etapaAbierta;
+etapaAbierta = function (id) {
+  const c = !SECRETA_DESDE[id] && CAPITULOS.find(c => c.n > 2 && (c.etapas || []).includes(id));
+  if (!c) return etapaAbiertaC6(id);
+  const k = c.etapas.indexOf(id);
+  if (k === 0) return capAbierto(c);
+  if (etapaHecha(c.etapas[k - 1]) || SAVE.llego.includes(id)) return true;   // si ya llegó caminando, se queda abierta
+  // una partida que cruzó 3-3 hacia la aldea con la salida vieja: 3-3 no quedó terminada, pero llegó y hizo el Banco de Sangre
+  return id === '3-4' && SAVE.llego.includes('3-3') && !!SAVE.banco;
+};
+// 3-3 todavía salía al Este hacia la aldea (de cuando el capítulo 3 terminaba ahí): cruzarla nunca la terminaba y 3-4 no se abría.
+// Ahora sale a 3-4, como todas (y 3-4 ya volvía a 3-3 por el Oeste).
+for (const s of ETAPAS['3-3'].salidas) if (s.lado === 'E' && s.a === 'aldea') s.a = '3-4';
 
 </script>
 </body></html>
